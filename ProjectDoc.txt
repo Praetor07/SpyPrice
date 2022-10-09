@@ -1,0 +1,21 @@
+Author: Pranav Sekhar
+Date: 28th August, 2022
+
+Objective: Look to scrap data from popular ecommerce websites such as BestBuy, Target, Walmart for certain
+items ( eg: laptops) on an hourly basis to scan and analyse if there are any patterns observable in terms of change in prices
+on a site or between sites. Analysis should help uncover optimal timeframes for article purchases.
+
+Motivation: As I began my graduate journey at UofI, I was in a dire need of a laptop and scrambling for good deals.
+Often, I would see certain laptops having discounted prices on certain sites in particular time windows, albeit intermittent.
+Thus, looking to gather this data on a regular basis to see any underlying patterns.
+
+Core goals:
+--Scrap data using requests/BeautifulSoup and create a dump of data -> Schedule this as a cron job to run multiple times/day.
+--Take the above dump and clean the data to allow for certain analysis.
+--Create a dashboard to showcase all this data through visualizations to understand the patterns( if any) and present the same.
+
+Stretch goals:
+--If for a certain date, we see multiple prices getting reduced, be able to answer the same with reason(holiday? if so, which one)
+routine drop in prices?)
+--Create a user framework that would allow user input of laptop specs, with which it could provide laptop recommenations
+along with site/price to buy at( Eg output: You should be able to buy laptop_x at site_y on these days)
