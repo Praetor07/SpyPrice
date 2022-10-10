@@ -134,6 +134,28 @@ def clean_ram(dirty_ram_df: pd.DataFrame):
     return dirty_ram_df
 
 
+def clean_graphic_card(dirty_graphic_df: pd.DataFrame):
+    """
+
+    :param dirty_graphic_df:
+    :return: structured graphic card dataframe column
+    """
+    dirty_graphic_df['GPU card'] = 'None'
+    dirty_graphic_df['GPU card detail'] = 'None'
+    dirty_graphic_df['Graphic card'].fillna("None", inplace=True)
+    for card in list(dirty_graphic_df['Graphic card'].unique()):
+        if re.search('(nvidia)|(geforce)', card):
+            dirty_graphic_df.loc[dirty_graphic_df['Graphic card'] == card, 'GPU card'] = 'Nvidia'
+            card_cl = card.replace('geforce', '')
+            card_cl = card_cl.replace('nvidia', '')
+            card_cl = card_cl.replace('graphics', '')
+            card_cl = card_cl.replace('gpu', '')
+            card_cl = card_cl.replace('laptop', '')
+            dirty_graphic_df.loc[dirty_graphic_df['Graphic card'] == card, 'GPU card detail'] = card_cl.strip()
+    dirty_graphic_df.drop('Graphic card', axis=1, inplace=True)
+    return dirty_graphic_df
+
+
 
 
 
@@ -142,6 +164,7 @@ df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y').dt.strftime('%m/%d/%Y
 df.drop_duplicates(subset=['Company Name', 'Processor', 'RAM', 'Graphic card','Hard disk', 'Price', 'Date', 'Time'], inplace=True)
 cleaned_df = clean_processors(df.copy())
 cleaned_df = clean_ram(cleaned_df.copy())
+cleaned_df = clean_graphic_card(cleaned_df.copy())
 cleaned_df.to_csv(f"{os.getcwd()}/maintenance.csv")
 
 
