@@ -5,6 +5,7 @@ Script to routinely run to maintain the data being scrapped.
 Author: Pranav Sekhar
 Date: 7th September,2022
 """
+import math
 import os
 
 import pandas as pd
@@ -62,10 +63,61 @@ for index, row in dirty_df.iterrows():
     article_dict[counter]["Date"] = date
     article_dict[counter]["Time"] = rounded_tm
 
+
+def clean_processors(dirty_proc_df: pd.DataFrame):
+    """
+
+    :param dirty_proc_df: dirty dataframe having different values for processor, cleaning to introduce a structure
+    :return: structure dataframe along processor column
+    """
+    dirty_proc_df['Processor Name'] = 'None'
+    dirty_proc_df['Processor Chip'] = 'None'
+    dirty_proc_df['Processor Chip Detail'] = "None"
+    dirty_proc_df['Processor'].fillna("None", inplace= True)
+    for processor in list(dirty_proc_df['Processor'].unique()):
+        if re.search('(intel)|(i[3,5,7,9])', processor):
+            dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Name'] = "Intel"
+            if re.search('(i[3,5,7,9])|(celeron)', processor):
+                x = re.search('(i[3,5,7,9])|(celeron)', processor)
+                i = processor[x.start():x.end()]
+                chip = processor.replace('intel', '')
+                chip = chip.replace('core', '')
+                chip = chip.replace('16gb', '')
+                chip = chip.replace('ddr4', '')
+                chip = chip.replace('ddr5', '')
+                chip = chip.replace('8gb', '')
+                chip = chip.replace('memory', '')
+                chip = " ".join(chip.split())
+                dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Chip'] = i
+                dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Chip Detail'] = chip.strip()
+        elif re.search('(amd)|(r[3,5,7,9])|(ryzen)', processor.lower()):
+            if re.search('(r[3,5,7,9])|(ryzen [1,2,3,4,5,6,7,8,9,10])', processor.lower()):
+                dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Name'] = "AMD"
+                x = re.search('(r[3,5,7,9])|(ryzen [1,2,3,4,5,6,7,8,9,10])', processor.lower())
+                a = processor[x.start():x.end()]
+                a = a.replace("r7", "ryzen 7")
+                a = a.replace("r9", "ryzen 9")
+                chip = processor.lower().replace('amd', '')
+                chip = chip.replace('core', '')
+                chip = chip.replace('16gb', '')
+                chip = chip.replace('ddr4', '')
+                chip = chip.replace('ddr5', '')
+                chip = chip.replace('8gb', '')
+                chip = chip.replace('memory', '')
+                chip = chip.replace('r', '')
+                chip = chip.replace('yzen', 'ryzen')
+                chip = " ".join(chip.split())
+                dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Chip'] = a
+                dirty_proc_df.loc[dirty_proc_df['Processor'] == processor, 'Processor Chip Detail'] = chip.strip()
+    dirty_proc_df.drop('Processor', axis=1, inplace= True)
+    return dirty_proc_df
+
+
 df = pd.DataFrame.from_dict(article_dict, orient="index")
 df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y').dt.strftime('%m/%d/%Y')
 df.drop_duplicates(subset=['Company Name', 'Processor', 'RAM', 'Graphic card','Hard disk', 'Price', 'Date', 'Time'], inplace=True)
-df.to_csv(f"{os.getcwd()}/maintenance.csv")
+cleaned_df = clean_processors(df.copy())
+cleaned_df.to_csv(f"{os.getcwd()}/maintenance.csv")
 
 
 
