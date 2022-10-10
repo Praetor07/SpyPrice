@@ -68,7 +68,7 @@ def clean_processors(dirty_proc_df: pd.DataFrame):
     """
 
     :param dirty_proc_df: dirty dataframe having different values for processor, cleaning to introduce a structure
-    :return: structure dataframe along processor column
+    :return: structure dataframe along processor column [Intel, Amd, None]
     """
     dirty_proc_df['Processor Name'] = 'None'
     dirty_proc_df['Processor Chip'] = 'None'
@@ -113,10 +113,35 @@ def clean_processors(dirty_proc_df: pd.DataFrame):
     return dirty_proc_df
 
 
+def clean_ram(dirty_ram_df: pd.DataFrame):
+    """
+
+    :param dirty_df: Initial ram dataframe that needs to be cleaned to introduce structure to the RAM column
+    :return: clean RAM column with
+    """
+    dirty_ram_df['RAM storage'] = 'None'
+    dirty_ram_df['RAM detail'] = 'None'
+    dirty_ram_df['RAM'].fillna("None", inplace=True)
+    for ram in list(dirty_ram_df['RAM'].unique()):
+        if re.search('(4gb)|(8gb)|(16gb)|(32gb)|(64gb)', ram.lower()):
+            x = re.search('(4gb)|(8gb)|(16gb)|(32gb)|(64gb)', ram.lower())
+            storage = ram[x.start():x.end()]
+            dirty_ram_df.loc[dirty_ram_df['RAM'] == ram, 'RAM storage'] = storage
+        if re.search('ddr', ram.lower()):
+            result = list(filter(lambda x: re.search('ddr', x), ram.split(' ')))
+            dirty_ram_df.loc[dirty_ram_df['RAM'] == ram, 'RAM detail'] = " ".join(result)
+    dirty_ram_df.drop('RAM', axis=1, inplace=True)
+    return dirty_ram_df
+
+
+
+
+
 df = pd.DataFrame.from_dict(article_dict, orient="index")
 df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y').dt.strftime('%m/%d/%Y')
 df.drop_duplicates(subset=['Company Name', 'Processor', 'RAM', 'Graphic card','Hard disk', 'Price', 'Date', 'Time'], inplace=True)
 cleaned_df = clean_processors(df.copy())
+cleaned_df = clean_ram(cleaned_df.copy())
 cleaned_df.to_csv(f"{os.getcwd()}/maintenance.csv")
 
 
