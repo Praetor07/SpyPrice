@@ -165,10 +165,10 @@ def return_string( string_tc: str, subst: str):
         if re.search(subst, string):
             return string
         if subst == '"':
-            if re.search("(^[0-9]+$)|([0-9]'')|([0-9]\")",string):
-                print("plplplplp",string)
-                return string
+            if re.search('[0-9]\'\'', string):
+                return string.replace("\'\'", '"')
     return False
+
 
 def check_color( str_tc: str):
     str_list = str_tc.split(' ')
@@ -182,7 +182,7 @@ def check_color( str_tc: str):
 def clean_metadata(dirty_meta_df: pd.DataFrame):
     dirty_meta_df['Color'] = 'NA'
     dirty_meta_df['Model name'] = 'None'
-    dirty_meta_df['Screen Size'] = 'None'
+    dirty_meta_df['Screen size'] = 'None'
     dirty_meta_df['Screen Refresh rate'] = 'None'
     for met in list(dirty_meta_df['Meta data'].unique()):
         model = []
@@ -190,6 +190,8 @@ def clean_metadata(dirty_meta_df: pd.DataFrame):
         for part in split_met:
             part_ref = part.replace('laptop', '')
             part_ref = part_ref.replace('gaming', '')
+            part_ref = part_ref.replace('touchscreen', '')
+            part_ref = part_ref.replace('multifunctional', '')
             if re.search('|'.join(companies), part_ref.strip().lower()):
                 x = re.search('|'.join(companies), part_ref.strip().lower())
                 part_ref = part_ref.replace(part_ref[x.start(): x.end()], '')
@@ -207,8 +209,10 @@ def clean_metadata(dirty_meta_df: pd.DataFrame):
                 part_ref = part_ref.replace(scolor, '')
             model.append(part_ref)
         model_str = ''.join(model)
-        dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Model'] = model_str.strip()
-    print(dirty_meta_df['Screen Size'].value_counts())
+        if len(model_str) > 1:
+            dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Model name'] = model_str.strip()
+
+    return  dirty_meta_df
 
 
 
@@ -219,7 +223,7 @@ df.drop_duplicates(subset=['Company Name', 'Processor', 'RAM', 'Graphic card','H
 cleaned_df = clean_processors(df.copy())
 cleaned_df = clean_ram(cleaned_df.copy())
 cleaned_df = clean_graphic_card(cleaned_df.copy())
-clean_metadata(cleaned_df)
+cleaned_df = clean_metadata(cleaned_df.copy())
 cleaned_df.to_csv(f"{os.getcwd()}/maintenance.csv")
 
 
