@@ -12,6 +12,7 @@ import pandas as pd
 from collections import  defaultdict
 import regex as re
 from datetime import datetime
+from matplotlib.colors import is_color_like
 
 pd.set_option('display.max_columns', None)
 
@@ -37,6 +38,7 @@ for index, row in dirty_df.iterrows():
     date = row[2]
     time = row[3]
     counter += 1
+    x = []
     search = re.search(r'[0-9]-[0-9]', laptop)
     laptop_ind = laptop[:int(search.start())+1] + " " + laptop[int(search.start())+2:] if search else laptop
     laptop_ind = laptop_ind.replace("2-in-1", "multifunctional")
@@ -56,7 +58,8 @@ for index, row in dirty_df.iterrows():
             article_dict[counter]["Graphic card"] = spec.strip().lower()
         else:
             #print(article_dict[counter])
-            article_dict[counter]["Meta data"] = article_dict.get(counter, {}).get('Meta data', []) + [spec.strip().lower()]
+            x.append(spec.strip().lower())
+    article_dict[counter]["Meta data"] = ','.join(x)
     article_dict[counter]['Price'] = price
     hours = datetime.strptime(time, "%H:%M:%S")
     rounded_tm = f"{hours.hour}:30:00"
@@ -156,6 +159,57 @@ def clean_graphic_card(dirty_graphic_df: pd.DataFrame):
     return dirty_graphic_df
 
 
+def return_string( string_tc: str, subst: str):
+    str_list = string_tc.split(' ')
+    for string in str_list:
+        if re.search(subst, string):
+            return string
+        if subst == '"':
+            if re.search("(^[0-9]+$)|([0-9]'')|([0-9]\")",string):
+                print("plplplplp",string)
+                return string
+    return False
+
+def check_color( str_tc: str):
+    str_list = str_tc.split(' ')
+    for string in str_list:
+        if is_color_like(string):
+            if string != "1":
+                return str_tc
+    return False
+
+
+def clean_metadata(dirty_meta_df: pd.DataFrame):
+    dirty_meta_df['Color'] = 'NA'
+    dirty_meta_df['Model name'] = 'None'
+    dirty_meta_df['Screen Size'] = 'None'
+    dirty_meta_df['Screen Refresh rate'] = 'None'
+    for met in list(dirty_meta_df['Meta data'].unique()):
+        model = []
+        split_met = met.split(',')
+        for part in split_met:
+            part_ref = part.replace('laptop', '')
+            part_ref = part_ref.replace('gaming', '')
+            if re.search('|'.join(companies), part_ref.strip().lower()):
+                x = re.search('|'.join(companies), part_ref.strip().lower())
+                part_ref = part_ref.replace(part_ref[x.start(): x.end()], '')
+            ssize = return_string(part_ref, '"')
+            if ssize:
+                dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Screen size'] = ssize.strip()
+                part_ref = part_ref.replace(ssize, '')
+            sfreq = return_string(part_ref, 'hz')
+            if sfreq:
+                dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Screen Refresh rate'] = sfreq.strip()
+                part_ref = part_ref.replace(sfreq, '')
+            scolor = check_color(part_ref)
+            if scolor:
+                dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Color'] = scolor.strip()
+                part_ref = part_ref.replace(scolor, '')
+            model.append(part_ref)
+        model_str = ''.join(model)
+        dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Model'] = model_str.strip()
+    print(dirty_meta_df['Screen Size'].value_counts())
+
 
 
 
@@ -165,6 +219,7 @@ df.drop_duplicates(subset=['Company Name', 'Processor', 'RAM', 'Graphic card','H
 cleaned_df = clean_processors(df.copy())
 cleaned_df = clean_ram(cleaned_df.copy())
 cleaned_df = clean_graphic_card(cleaned_df.copy())
+clean_metadata(cleaned_df)
 cleaned_df.to_csv(f"{os.getcwd()}/maintenance.csv")
 
 
