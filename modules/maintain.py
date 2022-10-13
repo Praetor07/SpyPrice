@@ -211,10 +211,7 @@ def clean_metadata(dirty_meta_df: pd.DataFrame):
         model_str = ''.join(model)
         if len(model_str) > 1:
             dirty_meta_df.loc[dirty_meta_df['Meta data'] == met, 'Model name'] = model_str.strip()
-
-    return  dirty_meta_df
-
-
+    return dirty_meta_df
 
 
 df = pd.DataFrame.from_dict(article_dict, orient="index")
